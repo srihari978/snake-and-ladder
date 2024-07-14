@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snakes and Ladders</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+    
+        
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(10, 50px);
+            gap: 1px;
+            background-color: #ccc;
+            margin-top: 20px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            position: relative;
+        }
+        .player {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            position: absolute;
+        }
+        .player1 { background-color: red; }
+        .player2 { background-color: blue; }
+        .player3 { background-color: green; }
+        .player4 { background-color: yellow; }
+        .snake { background-color: rgba(255, 0, 0, 0.2); }
+        .ladder { background-color: rgba(0, 255, 0, 0.2); }
+        #controls {
+            margin-top: 20px;
+        }
+        #dice {
+            margin-top: 10px;
+            font-size: 18px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+
+<body>
+    <div >
+        <p><h1>LADEER FOLLOWS THIS ORDER</h1>
+        1---- 38,
+        4---- 14,
+        9---- 31,
+        21----42,
+        28----84,
+        36---- 44,
+        51---- 67,
+        71---- 91,
+        80----100<br>
+        <h1>SNAKE FOLLOWS THIS ORDER</h1>
+        16----6,
+        47----26,
+        49----11,
+        56----53,
+        62----19,
+        64----60,
+        87----24,
+        93----73,
+        95----75,
+        98----78
+
+     </p>
+
+     </div>
+
+    <h1>Snakes and Ladders</h1>
+    <div id="board"></div>
+    <div id="controls">
+        <button id="rollDice">Roll Dice</button>
+        <p>Dice: <span id="dice">0</span></p>
+        <p>Current Player: <span id="currentPlayer">1</span></p>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const rollDiceButton = document.getElementById('rollDice');
+        const diceDisplay = document.getElementById('dice');
+        const currentPlayerDisplay = document.getElementById('currentPlayer');
+
+        const gridSize = 50;
+        const cells = [];
+        const players = [
+            { id: 1, position: 1, element: createPlayerElement('player1') },
+            { id: 2, position: 1, element: createPlayerElement('player2') },
+            { id: 3, position: 1, element: createPlayerElement('player3') },
+            { id: 4, position: 1, element: createPlayerElement('player4') }
+        ];
+        let currentPlayerIndex = 0;
+        let isMoving = false;
+
+        const snakes = {
+            16: 6,
+            47: 26,
+            49: 11,
+            56: 53,
+            62: 19,
+            64: 60,
+            87: 24,
+            93: 73,
+            95: 75,
+            98: 78
+        };
+
+        const ladders = {
+            1: 38,
+            4: 14,
+            9: 31,
+            21: 42,
+            28: 84,
+            36: 44,
+            51: 67,
+            71: 91,
+            80: 100
+        };
+
+        // Create the board
+        for (let i = 100; i > 0; i--) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.innerText = i;
+            if (snakes[i]) {
+                cell.classList.add('snake');
+            } else if (ladders[i]) {
+                cell.classList.add('ladder');
+            }
+            board.appendChild(cell);
+            cells[i] = cell;
+        }
+
+        // Add players to the starting position
+        players.forEach(player => cells[player.position].appendChild(player.element));
+
+        rollDiceButton.addEventListener('click', () => {
+            if (!isMoving) {
+                const diceRoll = Math.floor(Math.random() * 6) + 1;
+                diceDisplay.innerText = diceRoll;
+                movePlayer(diceRoll);
+            }
+        });
+
+        function createPlayerElement(className) {
+            const player = document.createElement('div');
+            player.classList.add('player', className);
+            return player;
+        }
+
+        async function movePlayer(diceRoll) {
+            const currentPlayer = players[currentPlayerIndex];
+            let newPosition = currentPlayer.position + diceRoll;
+            if (newPosition > 100) newPosition = 100;
+            isMoving = true;
+
+            for (let pos = currentPlayer.position + 1; pos <= newPosition; pos++) {
+                cells[currentPlayer.position].removeChild(currentPlayer.element);
+                currentPlayer.position = pos;
+                cells[currentPlayer.position].appendChild(currentPlayer.element);
+                await new Promise(resolve => setTimeout(resolve, 300)); // Step delay
+            }
+
+            if (snakes[currentPlayer.position]) {
+                newPosition = snakes[currentPlayer.position];
+                moveStepByStep(currentPlayer, newPosition);
+            } else if (ladders[currentPlayer.position]) {
+                newPosition = ladders[currentPlayer.position];
+                moveStepByStep(currentPlayer, newPosition);
+            }
+
+            if (currentPlayer.position === 100) {
+                alert(`Player ${currentPlayer.id} won!`);
+                resetGame();
+                return;
+            }
+
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            currentPlayerDisplay.innerText = players[currentPlayerIndex].id;
+            isMoving = false;
+        }
+
+        async function moveStepByStep(player, newPosition) {
+            while (player.position !== newPosition) {
+                cells[player.position].removeChild(player.element);
+                if (player.position < newPosition) {
+                    player.position++;
+                } else {
+                    player.position--;
+                }
+                cells[player.position].appendChild(player.element);
+                await new Promise(resolve => setTimeout(resolve, 300)); // Step delay
+            }
+        }
+
+        function resetGame() {
+            players.forEach(player => {
+                cells[player.position].removeChild(player.element);
+                player.position = 1;
+                cells[player.position].appendChild(player.element);
+            });
+            currentPlayerIndex = 0;
+            currentPlayerDisplay.innerText = players[currentPlayerIndex].id;
+            diceDisplay.innerText = '0';
+        }
+    </script>
+</body>
+</html>
